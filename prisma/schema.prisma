@@ -1,0 +1,93 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum CropType {
+  TOMATOES
+  SUKUMA_WIKI_KALES
+  EVENING_MILK
+  MANGOES
+}
+
+enum BatchStatus {
+  STORED
+  IN_TRANSIT
+  SOLD_OFFTAKER
+  COLLECTED
+}
+
+enum DispatchStatus {
+  PENDING_FILL
+  DISPATCHED
+  DELIVERED
+}
+
+model Farmer {
+  id            String       @id @default(uuid()) @db.Uuid
+  phoneNumber   String       @unique            // E.164, e.g. +254712345678
+  fullName      String
+  locationCounty String
+  nationalId    String?
+  createdAt     DateTime     @default(now())
+  batches       CrateBatch[]
+}
+
+model Hub {
+  id                 String       @id @default(uuid()) @db.Uuid
+  name               String
+  county             String       @default("Kiambu")
+  operatorPhone      String                      // receives critical temperature alerts
+  totalCrateCapacity Int          @default(200)
+  occupiedCrates     Int          @default(0)
+  targetTempCelsius  Float        @default(6.0)
+  currentTempCelsius Float        @default(5.4)
+  solarPowerWatts    Float        @default(0)
+  batteryPercentage  Int          @default(100)
+  pcmHoursRemaining  Float        @default(0)
+  doorOpenEvents     Int          @default(0)
+  batches            CrateBatch[]
+}
+
+model CrateBatch {
+  id               String        @id @default(uuid()) @db.Uuid
+  seq              Int           @unique @default(autoincrement())
+  batchCode        String        @unique            // CR-<seq>
+  farmerId         String        @db.Uuid
+  hubId            String        @db.Uuid
+  cropType         CropType
+  crateCount       Int
+  feePerCrateDay   Float         @default(30)
+  durationDays     Int
+  totalStorageFee  Float
+  status           BatchStatus   @default(STORED)
+  collectionPin    String
+  checkInTimestamp DateTime      @default(now())
+  transitDispatchId String?      @db.Uuid
+  farmer           Farmer        @relation(fields: [farmerId], references: [id])
+  hub              Hub           @relation(fields: [hubId], references: [id])
+  dispatch         TransitDispatch? @relation(fields: [transitDispatchId], references: [id])
+  @@index([hubId, status])
+}
+
+model TransitDispatch {
+  id                  String         @id @default(uuid()) @db.Uuid
+  tripCode            String         @unique
+  vehiclePlate        String
+  coolingPodId        String
+  driverName          String
+  driverPhone         String
+  destinationMarket   String
+  aggregatedCrates    Int
+  internalTransitTemp Float?
+  lastLat             Float?
+  lastLng             Float?
+  departedAt          DateTime?
+  arrivedAt           DateTime?
+  status              DispatchStatus @default(PENDING_FILL)
+  batches             CrateBatch[]
+}
