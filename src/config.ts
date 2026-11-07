@@ -10,4 +10,5 @@ export const cfg = {
   dispatchMinCrates: 140,
   podCapacity: 160,
   alertTempC: 10,
+  litresPerCrate: 20,
 };

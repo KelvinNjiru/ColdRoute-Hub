@@ -27,15 +27,19 @@ async function route(sessionId: string, phone: string, text: string): Promise<st
       if (p.length === 1) return `CON Select Crop:\n${CROPS.map((c, i) => `${i + 1}. ${c.label}`).join('\n')}`;
       const crop = CROPS[Number(p[1]) - 1];
       if (!crop) return 'END Invalid crop. Dial *384*254# to retry.';
-      if (p.length === 2) return 'CON Enter number of crates (1-30):';
-      const crates = Number(p[2]);
-      if (!Number.isInteger(crates) || crates < 1 || crates > 30) return 'END Crates must be 1 to 30. Please retry.';
+      const isMilk = crop.key === 'EVENING_MILK';
+      if (p.length === 2) return isMilk ? 'CON Enter litres of milk (1-600):' : 'CON Enter number of crates (1-30):';
+      const qty = Number(p[2]);
+      const crates = isMilk ? Math.ceil(qty / cfg.litresPerCrate) : qty;
+      if (!Number.isInteger(qty) || qty < 1 || crates < 1 || crates > 30)
+      return isMilk ? 'END Litres must be 1 to 600. Please retry.' : 'END Crates must be 1 to 30. Please retry.';
       if (crates > free) return `END Only ${free} crates free at Kiambu Hub.`;
       if (p.length === 3) return 'CON Enter storage days (1-7 days):';
       const days = Number(p[3]);
       if (!Number.isInteger(days) || days < 1 || days > 7) return 'END Days must be 1 to 7. Please retry.';
       const fee = crates * days * cfg.feePerCrateDay;
-      if (p.length === 4) return `CON Confirm booking of ${crates} crates of ${crop.label} for ${days} days at KSh ${fee}?\n1. Yes\n2. Cancel`;
+     const what = isMilk ? `${qty} litres (${crates} crates)` : `${crates} crates`;
+      if (p.length === 4) return `CON Confirm booking of ${what} of ${crop.label} for ${days} days at KSh ${fee}?\n1. Yes\n2. Cancel`;
       if (p[4] !== '1') return 'END Booking cancelled.';
       // Idempotency: a network retry of the same session must not double-book.
       if (!(await setOnce(`ussd:confirm:${sessionId}`, 300))) return 'END Booking already processed. Check your SMS.';
