@@ -32,19 +32,19 @@ async function route(sessionId: string, phone: string, text: string): Promise<st
       const qty = Number(p[2]);
       const crates = isMilk ? Math.ceil(qty / cfg.litresPerCrate) : qty;
       if (!Number.isInteger(qty) || qty < 1 || crates < 1 || crates > 30)
-      return isMilk ? 'END Litres must be 1 to 600. Please retry.' : 'END Crates must be 1 to 30. Please retry.';
+        return isMilk ? 'END Litres must be 1 to 600. Please retry.' : 'END Crates must be 1 to 30. Please retry.';
       if (crates > free) return `END Only ${free} crates free at Kiambu Hub.`;
       if (p.length === 3) return 'CON Enter storage days (1-7 days):';
       const days = Number(p[3]);
       if (!Number.isInteger(days) || days < 1 || days > 7) return 'END Days must be 1 to 7. Please retry.';
       const fee = crates * days * cfg.feePerCrateDay;
-     const what = isMilk ? `${qty} litres (${crates} crates)` : `${crates} crates`;
+      const what = isMilk ? `${qty} litres (${crates} crates)` : `${crates} crates`;
       if (p.length === 4) return `CON Confirm booking of ${what} of ${crop.label} for ${days} days at KSh ${fee}?\n1. Yes\n2. Cancel`;
       if (p[4] !== '1') return 'END Booking cancelled.';
       // Idempotency: a network retry of the same session must not double-book.
       if (!(await setOnce(`ussd:confirm:${sessionId}`, 300))) return 'END Booking already processed. Check your SMS.';
       try {
-        const b = await createBooking({ hubId: hub.id, phone, crop: crop.key, crates, days });
+        const b = await createBooking({ hubId: hub.id, phone, crop: crop.key, crates, litres: isMilk ? qty : undefined, days });
         return `END Booking Confirmed! Batch: ${b.batchCode}. PIN: ${b.collectionPin}. Check your SMS for receipt.`;
       } catch (e) {
         if (e instanceof NoCapacityError) return 'END Hub just filled up. Please try another hub or later.';

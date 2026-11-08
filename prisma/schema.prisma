@@ -28,20 +28,20 @@ enum DispatchStatus {
 }
 
 model Farmer {
-  id            String       @id @default(uuid()) @db.Uuid
-  phoneNumber   String       @unique            // E.164, e.g. +254712345678
-  fullName      String
+  id             String       @id @default(uuid()) @db.Uuid
+  phoneNumber    String       @unique
+  fullName       String
   locationCounty String
-  nationalId    String?
-  createdAt     DateTime     @default(now())
-  batches       CrateBatch[]
+  nationalId     String?
+  createdAt      DateTime     @default(now())
+  batches        CrateBatch[]
 }
 
 model Hub {
   id                 String       @id @default(uuid()) @db.Uuid
   name               String
   county             String       @default("Kiambu")
-  operatorPhone      String                      // receives critical temperature alerts
+  operatorPhone      String
   totalCrateCapacity Int          @default(200)
   occupiedCrates     Int          @default(0)
   targetTempCelsius  Float        @default(6.0)
@@ -54,23 +54,25 @@ model Hub {
 }
 
 model CrateBatch {
-  id               String        @id @default(uuid()) @db.Uuid
-  seq              Int           @unique @default(autoincrement())
-  batchCode        String        @unique            // CR-<seq>
-  farmerId         String        @db.Uuid
-  hubId            String        @db.Uuid
-  cropType         CropType
-  crateCount       Int
-  feePerCrateDay   Float         @default(30)
-  durationDays     Int
-  totalStorageFee  Float
-  status           BatchStatus   @default(STORED)
-  collectionPin    String
-  checkInTimestamp DateTime      @default(now())
-  transitDispatchId String?      @db.Uuid
-  farmer           Farmer        @relation(fields: [farmerId], references: [id])
-  hub              Hub           @relation(fields: [hubId], references: [id])
-  dispatch         TransitDispatch? @relation(fields: [transitDispatchId], references: [id])
+  id                String           @id @default(uuid()) @db.Uuid
+  seq               Int              @unique @default(autoincrement())
+  batchCode         String           @unique
+  farmerId          String           @db.Uuid
+  hubId             String           @db.Uuid
+  cropType          CropType
+  crateCount        Int
+  litres            Int?
+  feePerCrateDay    Float            @default(30)
+  durationDays      Int
+  totalStorageFee   Float
+  status            BatchStatus      @default(STORED)
+  collectionPin     String
+  checkInTimestamp  DateTime         @default(now())
+  transitDispatchId String?          @db.Uuid
+  farmer            Farmer           @relation(fields: [farmerId], references: [id])
+  hub               Hub              @relation(fields: [hubId], references: [id])
+  dispatch          TransitDispatch? @relation(fields: [transitDispatchId], references: [id])
+
   @@index([hubId, status])
 }
 

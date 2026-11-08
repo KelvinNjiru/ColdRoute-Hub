@@ -119,6 +119,7 @@ function Batches({ rows }: { rows: Batch[] }) {
             <span className="h-3 w-3 rounded-full" style={{ background: c.color }} />
             <div><div><b>{b.batchCode}</b> {b.farmer.fullName}</div><div className="text-sm" style={{ color: C.soft }}>{c.label}, day {days(b.checkInTimestamp) + 1}, {b.farmer.phoneNumber}</div></div>
             <div className="text-right"><div className="font-bold">{b.crateCount} crates</div>
+              {b.litres ? <div className="text-xs" style={{ color: C.soft }}>{b.litres} litres of milk</div> : null}
               <span className="rounded-full px-2.5 py-0.5 text-xs font-semibold" style={{ background: stored ? '#d5eddc' : '#fde8b8', color: stored ? '#1f5c36' : '#7a5200' }}>{stored ? 'In cold room' : 'On the truck'}</span></div>
           </li>); })}
         {!rows.length && <li className="py-6" style={{ color: C.soft }}>Nothing stored yet. Book crates from the phone, or press 30 crates at the top.</li>}

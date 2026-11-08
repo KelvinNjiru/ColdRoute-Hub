@@ -13,7 +13,7 @@ export const CROPS: { key: CropType; label: string }[] = [
   { key: 'MANGOES', label: 'Mangoes' },
 ];
 
-export async function createBooking(a: { hubId: string; phone: string; name?: string; crop: CropType; crates: number; days: number }) {
+export async function createBooking(a: { hubId: string; phone: string; name?: string; crop: CropType; crates: number; litres?: number; days: number }) {
   const total = a.crates * a.days * cfg.feePerCrateDay;
   const { batch, hub } = await prisma.$transaction(async (tx) => {
     // Atomic capacity guard: only succeeds if there is room.
@@ -27,13 +27,15 @@ export async function createBooking(a: { hubId: string; phone: string; name?: st
     });
     const created = await tx.crateBatch.create({ data: {
       batchCode: `TMP-${Date.now()}-${randomInt(1e6)}`, farmerId: farmer.id, hubId: hub.id, cropType: a.crop,
-      crateCount: a.crates, feePerCrateDay: cfg.feePerCrateDay, durationDays: a.days, totalStorageFee: total,
+      crateCount: a.crates, litres: a.litres ?? null,
+      feePerCrateDay: cfg.feePerCrateDay, durationDays: a.days, totalStorageFee: total,
       collectionPin: String(randomInt(1000, 10000)),
     }});
     const batch = await tx.crateBatch.update({ where: { id: created.id }, data: { batchCode: `CR-${created.seq}` } });
     return { batch, hub };
   });
   const label = CROPS.find((c) => c.key === a.crop)!.label;
-  sendSmsReceipt(a.phone, batch.batchCode, label, a.crates, batch.collectionPin, hub.name).catch(console.error);
+  const quantity = a.litres ? `${a.litres} litres (${a.crates} crates)` : `${a.crates} crates`;
+  sendSmsReceipt(a.phone, batch.batchCode, label, quantity, batch.collectionPin, hub.name).catch(console.error);
   return batch;
 }
